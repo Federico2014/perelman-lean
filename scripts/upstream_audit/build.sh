@@ -9,11 +9,15 @@ git rev-parse HEAD
 python3 /audit/check_deps.py
 python3 - <<'PY'
 from pathlib import Path
+import os
 root=Path('/work/proof/.lake/build/lib/lean')
 files=list((root/'PoincareLib').rglob('*.olean'))+list((root/'PoincareConjecture').rglob('*.olean'))
-if files:
+if os.environ.get('PERELMAN_RESUME_BUILD') == '1':
+    print(f'Resuming our own pinned source build: {len(files)} candidate modules cached',flush=True)
+elif files:
     raise SystemExit(f'Fresh-build precondition failed: {len(files)} candidate oleans already exist')
-print('Fresh-build precondition: no precompiled candidate modules',flush=True)
+else:
+    print('Fresh-build precondition: no precompiled candidate modules',flush=True)
 PY
 lake --no-cache build
 printf 'Build end: '

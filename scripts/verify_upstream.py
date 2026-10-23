@@ -9,6 +9,7 @@ import re
 import shlex
 import subprocess
 import sys
+import os
 
 
 REPO = Path(__file__).resolve().parents[1]
@@ -18,6 +19,28 @@ LEAN_SHA256 = "890afd185370f85666025b883914ab4f4b339136f8c96167b69cfb62aecaf235"
 LEAN_URL = "https://github.com/leanprover/lean4/releases/download/v4.33.1/lean-4.33.1-linux.tar.zst"
 BASE = "ubuntu@sha256:b3cc40b72b93588182b5410f723c7aaf142363311c2aa993d8a453ddcbb3ae15"
 VOLUMES = {name: f"perelman-ci-{name}" for name in ("source", "lake", "runtime", "full")}
+MAX_CHECKPOINT_BYTES = 6 * 1024**3
+
+
+def sha256_file(path):
+    digest = hashlib.sha256()
+    with path.open("rb") as stream:
+        for block in iter(lambda: stream.read(1024 * 1024), b""):
+            digest.update(block)
+    return digest.hexdigest()
+
+
+def checkpoint_metadata(path):
+    data = json.loads((path / "metadata.json").read_text())
+    if (data.get("commit") != COMMIT or data.get("lean_archive_sha256") != LEAN_SHA256
+            or data.get("format") != 1 or data.get("clean_source_origin") is not True):
+        raise RuntimeError("Checkpoint does not belong to this clean, pinned source build")
+    archive = path / "build.tar.zst"
+    if archive.stat().st_size > MAX_CHECKPOINT_BYTES:
+        raise RuntimeError("Checkpoint exceeds the bounded cache size")
+    if sha256_file(archive) != data["sha256"]:
+        raise RuntimeError("Checkpoint checksum mismatch")
+    return data
 
 
 def check_axioms(output, names):
@@ -142,10 +165,98 @@ def integration(image, logs):
     (logs / "integration-axioms.json").write_text(json.dumps(evidence, indent=2) + "\n")
 
 
+def restore_checkpoint(workspace, checkpoint):
+    if not (checkpoint / "metadata.json").exists():
+        print("No prior proof checkpoint; starting with zero candidate modules", flush=True)
+        return
+    data = checkpoint_metadata(checkpoint)
+    state = json.loads((workspace / "state.json").read_text())
+    container(state["image"], "restore", "/audit/restore_checkpoint.sh",
+              workspace / "logs/restore.log",
+              extra=bind(checkpoint, "/checkpoint"))
+    state["checkpoint"] = data
+    (workspace / "state.json").write_text(json.dumps(state, indent=2) + "\n")
+
+
+def build_checkpointed(workspace, state):
+    log = workspace / "logs/build.log"
+    previous = state.get("checkpoint")
+    extra = ["--env", "PERELMAN_RESUME_BUILD=1"] if previous else []
+    try:
+        container(state["image"], "build", "/audit/build.sh", log,
+                  extra=extra, timeout=18000)
+        complete = True
+    except RuntimeError:
+        if log.with_suffix(".log.status").read_text().strip() != "124":
+            raise
+        complete = False
+        print("Source-build time slice ended; this is not a completed proof check", flush=True)
+    if previous is None and "Fresh-build precondition: no precompiled candidate modules" not in log.read_text():
+        raise RuntimeError("Missing clean-source origin evidence")
+    state["source_complete"] = complete
+    state["clean_source_origin"] = True
+    state["chunks"] = 1 + (previous or {}).get("chunks", 0)
+    (workspace / "state.json").write_text(json.dumps(state, indent=2) + "\n")
+    if output := os.environ.get("GITHUB_OUTPUT"):
+        with open(output, "a") as stream:
+            stream.write(f"complete={str(complete).lower()}\n")
+
+
+def save_checkpoint(workspace, checkpoint):
+    state = json.loads((workspace / "state.json").read_text())
+    if not state.get("clean_source_origin"):
+        raise RuntimeError("Cannot checkpoint an unattested build")
+    checkpoint.mkdir(parents=True, exist_ok=True)
+    archive = checkpoint / "build.tar.zst"
+    cid_file = workspace / "checkpoint-container.id"
+    cid_file.unlink(missing_ok=True)
+    args = ["docker", "run", "--rm", "--network=none", "--user=501:501", "--log-driver=none",
+            "--cidfile", str(cid_file),
+            "--cap-drop=ALL", "--security-opt=no-new-privileges", "--memory=2g", "--cpus=2"]
+    args += volume("lake", "/cache", True)
+    args += [state["image"], "tar", "-C", "/cache",
+             "--use-compress-program=zstd -T2 -3 --long=27", "-cf", "-", "build"]
+    with archive.open("wb") as destination, (workspace / "logs/checkpoint.log").open("wb") as errors:
+        process = subprocess.Popen(args, stdout=subprocess.PIPE, stderr=errors)
+        size = 0
+        try:
+            for block in iter(lambda: process.stdout.read(1024 * 1024), b""):
+                size += len(block)
+                if size > MAX_CHECKPOINT_BYTES:
+                    raise RuntimeError("Proof checkpoint exceeds the 6 GiB storage bound")
+                destination.write(block)
+            if process.wait():
+                raise RuntimeError("Checkpoint export failed")
+        except BaseException:
+            process.kill()
+            process.wait()
+            if cid_file.exists():
+                cid = cid_file.read_text().strip()
+                if re.fullmatch(r"[0-9a-f]{64}", cid):
+                    subprocess.run(["docker", "stop", "--timeout", "5", cid],
+                                   stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=False)
+            archive.unlink(missing_ok=True)
+            raise
+    data = {key: state[key] for key in (
+        "commit", "lean_archive_sha256", "clean_source_origin", "source_complete", "chunks")}
+    count_args = ["docker", "run", "--rm", "--network=none", "--user=501:501"]
+    count_args += volume("lake", "/cache", True)
+    count_args += [state["image"], "python3", "-c",
+                   "from pathlib import Path; r=Path('/cache/build/lib/lean'); "
+                   "print(sum(1 for n in ['PoincareLib','PoincareConjecture'] for p in (r/n).rglob('*.olean')))"]
+    data.update(format=1, sha256=sha256_file(archive),
+                candidate_modules=int(subprocess.check_output(count_args, text=True)),
+                origin_run=os.environ.get("GITHUB_RUN_ID", "local"),
+                origin_attempt=os.environ.get("GITHUB_RUN_ATTEMPT", "local"))
+    (checkpoint / "metadata.json").write_text(json.dumps(data, indent=2) + "\n")
+    print("POINCARE_CHECKPOINT " + json.dumps(data), flush=True)
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("stage", choices=["prepare", "build", "targets", "replay", "integration"])
+    parser.add_argument("stage", choices=["prepare", "restore", "checkpoint", "build", "targets", "replay", "integration"])
     parser.add_argument("--workspace", required=True, type=Path)
+    parser.add_argument("--checkpoint", type=Path)
     args = parser.parse_args()
     workspace = args.workspace.resolve()
     try:
@@ -156,7 +267,16 @@ def main():
         if state["commit"] != COMMIT:
             raise RuntimeError("Verification state has a different source revision")
         logs, image = workspace / "logs", state["image"]
-        if args.stage == "integration":
+        if args.stage in ("restore", "checkpoint"):
+            if args.checkpoint is None:
+                raise RuntimeError("This stage requires --checkpoint")
+            if args.stage == "restore":
+                restore_checkpoint(workspace, args.checkpoint.resolve())
+            else:
+                save_checkpoint(workspace, args.checkpoint.resolve())
+        elif args.stage == "build":
+            build_checkpointed(workspace, state)
+        elif args.stage == "integration":
             integration(image, logs)
         else:
             script = {"build": "build.sh", "targets": "check_targets.sh", "replay": "kernel_replay.sh"}[args.stage]

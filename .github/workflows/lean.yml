@@ -19,5 +19,6 @@ jobs:
           auto-config: "false"
           build: "true"
           use-mathlib-cache: "true"
+          use-github-cache: "false"
       - name: Recheck sources, dependencies, and axiom rejection
         run: python3 verify.py --self-test

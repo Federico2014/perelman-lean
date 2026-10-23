@@ -1,0 +1,71 @@
+# Poincare formalization in Lean
+
+This repository integrates a complete proof of the topological three-dimensional
+Poincare conjecture from the pinned upstream
+[PoincareConjecture project](https://github.com/frenzymath/PoincareConjecture/tree/62db01af9388dc1d9b56b66d6674f4c09b2318a2).
+The geometric proof belongs to its upstream contributors. This repository adds
+the shared-target adapter, independent statement check, and verification harness.
+
+The [verification run](@CI_URL@) checked this integration at
+`@VERIFIED_SHA@`. See [verification.json](full-proof/verification.json) for the
+recorded scope and [provenance](full-proof/PROVENANCE.md) for attribution.
+
+## The verified target
+
+Every compact, Hausdorff, simply connected topological three-manifold without
+boundary is homeomorphic to the standard unit three-sphere in Euclidean four-space:
+
+```lean
+Perelman.poincareConjecture : Perelman.PoincareConjecture
+```
+
+The [target definition](Perelman/Statement.lean) uses standard mathlib types.
+The [adapter](full-proof/PerelmanFull.lean) derives the upstream theorem's
+second-countability hypothesis from compactness. It adds no smoothness, curvature,
+surgery-flow, or conjecture hypothesis to the topological conclusion.
+
+## Reproduce the complete proof check
+
+Install elan, then use the separate project's pinned Lean 4.33.1 toolchain:
+
+```sh
+cd full-proof
+lake exe cache get
+lake build
+lake env lean -DwarningAsError=true FullAudit.lean
+```
+
+The geometric proof is large; its first source build can take many hours.
+All dependency revisions are locked in [the manifest](full-proof/lake-manifest.json).
+After preparing both projects, `python3 verify.py --self-test --require-complete`
+also checks the root foundations and the complete-target gate.
+
+## Verification scope
+
+The dedicated workflow starts with zero precompiled candidate proof modules.
+Long builds may resume only its own pinned source-build checkpoints. It checks
+all original sources, the original smooth and topological endpoints, a separately
+stated topological target and bridge, transitive axiom dependencies, and the
+integrated theorem's exact universe-polymorphic target. Only `propext`,
+`Classical.choice`, and `Quot.sound` are permitted.
+
+Lean kernel replay covers the named endpoint and adapter modules. This is not a
+claim that Nanoda or another independent external checker was run, or that every
+imported constant was replayed into a fresh environment. Mathematical statement
+correspondence was reviewed separately; kernel acceptance alone cannot establish
+the meaning of natural-language mathematics.
+
+## Separate analytic foundations
+
+The root Lean 4.32.0 project retains independently proved analytic lemmas on
+normalization, logarithmic comparison, finite jump errors, and conditional
+covering-space homeomorphisms. Its checks and historical logs concern those
+partial ingredients. They are not dependencies of the imported geometric proof.
+
+```sh
+lake exe cache get
+python3 verify.py --self-test
+```
+
+See [the proof scope](ROADMAP.md) and [the upstream source map](full-proof/PROVENANCE.md).
+Code and dependencies retain their own licenses and author notices.

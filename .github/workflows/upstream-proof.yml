@@ -33,16 +33,43 @@ jobs:
           df -h
       - name: Test fail-closed audit parsing
         run: python3 -m unittest discover -s scripts -p 'test_upstream_verifier.py' -v
+      - name: Restore this workflow's source-build checkpoint
+        uses: actions/cache/restore@0400d5f644dc74513175e3cd8d07132dd4860809
+        with:
+          path: ${{ runner.temp }}/poincare-proof-checkpoint
+          key: poincare-source-v1-${{ hashFiles('full-proof/lake-manifest.json', 'full-proof/lean-toolchain') }}-${{ github.run_id }}-${{ github.run_attempt }}
+          restore-keys: poincare-source-v1-${{ hashFiles('full-proof/lake-manifest.json', 'full-proof/lean-toolchain') }}-
       - name: Prepare isolated toolchain and pinned dependencies
         run: python3 scripts/verify_upstream.py prepare --workspace "$RUNNER_TEMP/poincare-verify"
+      - name: Validate and import our own checkpoint
+        run: python3 scripts/verify_upstream.py restore --workspace "$RUNNER_TEMP/poincare-verify" --checkpoint "$RUNNER_TEMP/poincare-proof-checkpoint"
       - name: Build all original proof sources offline
+        id: build
         run: python3 scripts/verify_upstream.py build --workspace "$RUNNER_TEMP/poincare-verify"
+      - name: Export bounded source-build checkpoint
+        id: checkpoint
+        continue-on-error: true
+        run: python3 scripts/verify_upstream.py checkpoint --workspace "$RUNNER_TEMP/poincare-verify" --checkpoint "$RUNNER_TEMP/poincare-proof-checkpoint"
+      - name: Save this workflow's source-build checkpoint
+        if: steps.checkpoint.outcome == 'success'
+        uses: actions/cache/save@0400d5f644dc74513175e3cd8d07132dd4860809
+        with:
+          path: ${{ runner.temp }}/poincare-proof-checkpoint
+          key: poincare-source-v1-${{ hashFiles('full-proof/lake-manifest.json', 'full-proof/lean-toolchain') }}-${{ github.run_id }}-${{ github.run_attempt }}
       - name: Check original targets and independent statement bridge
+        if: steps.build.outputs.complete == 'true'
         run: python3 scripts/verify_upstream.py targets --workspace "$RUNNER_TEMP/poincare-verify"
       - name: Replay target modules with the Lean kernel
+        if: steps.build.outputs.complete == 'true'
         run: python3 scripts/verify_upstream.py replay --workspace "$RUNNER_TEMP/poincare-verify"
       - name: Check the integrated full target and completeness gate
+        if: steps.build.outputs.complete == 'true'
         run: python3 scripts/verify_upstream.py integration --workspace "$RUNNER_TEMP/poincare-verify"
+      - name: Require the complete proof, not merely a checkpoint
+        if: steps.build.outputs.complete != 'true'
+        run: |
+          echo '::error::POINCARE_BUILD_CHECKPOINT_PENDING: Source compilation is incomplete. Resume this run; no full-proof verification has passed.'
+          exit 1
       - name: Record final source provenance
         if: always()
         run: |
