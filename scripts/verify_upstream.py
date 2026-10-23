@@ -117,7 +117,7 @@ USER verifier
     for name in VOLUMES:
         args += volume(name, f"/volume-{name}")
     args += [image, "/bin/sh", "-c",
-             "cp -a /input/. /volume-source/ && mkdir -p /volume-runtime/tmp && "
+             "cp -a /input/. /volume-source/ && mkdir -p /volume-source/.lake /volume-runtime/tmp && "
              "chown -R 501:501 /volume-source /volume-lake /volume-runtime /volume-full"]
     run(args, logs / "volume-setup.log")
     state = {"source": SOURCE, "commit": COMMIT, "lean_archive_sha256": LEAN_SHA256, "image": image}

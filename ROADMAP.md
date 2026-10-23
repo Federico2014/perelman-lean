@@ -27,8 +27,9 @@ verified by the root project's earlier successful build.
 | Geometric/topological bridge | Reverse surgery topology and construct a spherical covering, or an equivalent classification adequate for the target manifolds | Three-dimensional topology and geometric extinction | Missing |
 | Main theorem | Prove `Perelman.PoincareConjecture` without extra geometric assumptions | All stages | Missing |
 
-The opt-in `--require-complete` verification mode currently fails because this
-main theorem is absent. Its negative tests also reject a theorem that proves the
+The opt-in `--require-complete` verification mode checks the separate full-proof
+integration after the root checks. That integration has not yet passed independent
+verification. The root gate's negative tests also reject a theorem that proves the
 target only by assuming that same target. This gate does not fill any mathematical
 gap or replace independent review of the statement.
 

@@ -122,8 +122,12 @@ complete proof explicitly, use:
 python3 verify.py --require-complete
 ```
 
-**This command currently exits with failure because the full theorem is missing.**
-It expects a universe-polymorphic theorem named `Perelman.poincareConjecture` whose
+This runs the root checks, then builds and audits the separate `full-proof/`
+project using its own pinned Lean 4.33.1 toolchain. Fetch that project's dependencies
+from its directory first. The integration is still pending independent verification;
+a missing dependency, failed build, or failed completeness gate makes this command
+exit with failure. It expects a universe-polymorphic theorem named
+`Perelman.poincareConjecture` whose
 type is exactly `Perelman.PoincareConjecture`, allowing only the three foundation
 axioms listed below. A successful partial build is not a successful completeness
 check. The gate checks the encoded target, so independent review of the target's
