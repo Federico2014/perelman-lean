@@ -14,15 +14,16 @@ import tempfile
 
 
 ROOT = Path(__file__).resolve().parent
+FULL_ROOT = ROOT / "full-proof"
 MODULES = [
     "Perelman.Statement", "Perelman.Extinction", "Perelman.UpperSlope",
     "Perelman.Piecewise", "Perelman.Covering", "Perelman", "Audit", "Completion",
 ]
 
 
-def run(args: list[str], *, expect_success: bool = True) -> subprocess.CompletedProcess:
+def run(args: list[str], *, expect_success: bool = True, cwd: Path = ROOT) -> subprocess.CompletedProcess:
     result = subprocess.run(
-        args, cwd=ROOT, text=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+        args, cwd=cwd, text=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
         check=False,
     )
     if expect_success and result.returncode:
@@ -31,12 +32,12 @@ def run(args: list[str], *, expect_success: bool = True) -> subprocess.Completed
     return result
 
 
-def verify_revisions() -> None:
-    manifest = json.loads((ROOT / "lake-manifest.json").read_text())
+def verify_revisions(project: Path = ROOT) -> None:
+    manifest = json.loads((project / "lake-manifest.json").read_text())
     for package in manifest["packages"]:
-        path = ROOT / ".lake" / "packages" / package["name"]
+        path = project / ".lake" / "packages" / package["name"]
         if not path.is_dir():
-            raise RuntimeError("Dependencies missing: run `lake update` and `lake exe cache get` first")
+            raise RuntimeError(f"Dependencies missing in {project}: run `lake exe cache get` there first")
         actual = run(["git", "-C", str(path), "rev-parse", "HEAD"]).stdout.strip()
         if actual != package["rev"]:
             raise RuntimeError(f"Revision mismatch for {package['name']}: {actual}")
@@ -56,7 +57,18 @@ def verify() -> None:
             str(relative.with_suffix(".lean")),
         ])
         print(result.stdout, end="", flush=True)
-    print("Local source checks and axiom audit passed. The full Poincare conjecture remains unproved.", flush=True)
+    print("Root-project source checks and axiom audit passed. The full geometric proof has not been checked by this step.", flush=True)
+
+
+def verify_complete() -> None:
+    """Select the full project's own toolchain, build sources, and check its gate."""
+    verify_revisions(FULL_ROOT)
+    print(run(["lake", "env", "lean", "--version"], cwd=FULL_ROOT).stdout, end="", flush=True)
+    # Running in this directory lets elan select Lean 4.33.1. Using `lake -d`
+    # from the root directory would instead select the root's Lean 4.32.0.
+    print(run(["lake", "--no-cache", "build"], cwd=FULL_ROOT).stdout, end="", flush=True)
+    result = run(["lake", "env", "lean", "-DwarningAsError=true", "FullAudit.lean"], cwd=FULL_ROOT)
+    print(result.stdout, end="", flush=True)
 
 
 def self_test_audit() -> None:
@@ -106,10 +118,7 @@ def main() -> int:
         if args.self_test:
             self_test_audit()
         if args.require_complete:
-            result = completion_check()
-            print(result.stdout, end="", flush=True)
-            if result.returncode:
-                raise RuntimeError("The full Poincare proof is not complete")
+            verify_complete()
     except (OSError, RuntimeError, ValueError) as exc:
         print(f"Verification failed: {exc}", file=sys.stderr)
         return 1
