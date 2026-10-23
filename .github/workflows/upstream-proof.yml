@@ -1,0 +1,51 @@
+name: Verify pinned full proof
+
+on:
+  push:
+    branches: ["verify/upstream-complete", "main"]
+    paths:
+      - "full-proof/**/*.lean"
+      - "full-proof/lean-toolchain"
+      - "full-proof/lakefile.toml"
+      - "full-proof/lake-manifest.json"
+      - "Perelman/Statement.lean"
+      - "CompletionPolicy.lean"
+      - "scripts/upstream_audit/**"
+      - "scripts/verify_upstream.py"
+      - "scripts/test_upstream_verifier.py"
+      - ".github/workflows/upstream-proof.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 350
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+      - name: Free disposable runner disk for Lean
+        run: |
+          sudo rm -rf /usr/local/lib/android /usr/share/dotnet /opt/ghc
+          df -h
+      - name: Test fail-closed audit parsing
+        run: python3 -m unittest discover -s scripts -p 'test_upstream_verifier.py' -v
+      - name: Prepare isolated toolchain and pinned dependencies
+        run: python3 scripts/verify_upstream.py prepare --workspace "$RUNNER_TEMP/poincare-verify"
+      - name: Build all original proof sources offline
+        run: python3 scripts/verify_upstream.py build --workspace "$RUNNER_TEMP/poincare-verify"
+      - name: Check original targets and independent statement bridge
+        run: python3 scripts/verify_upstream.py targets --workspace "$RUNNER_TEMP/poincare-verify"
+      - name: Replay target modules with the Lean kernel
+        run: python3 scripts/verify_upstream.py replay --workspace "$RUNNER_TEMP/poincare-verify"
+      - name: Check the integrated full target and completeness gate
+        run: python3 scripts/verify_upstream.py integration --workspace "$RUNNER_TEMP/poincare-verify"
+      - name: Record final source provenance
+        if: always()
+        run: |
+          if [ -f "$RUNNER_TEMP/poincare-verify/state.json" ]; then
+            cat "$RUNNER_TEMP/poincare-verify/state.json"
+          fi

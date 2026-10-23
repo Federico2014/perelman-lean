@@ -4,6 +4,11 @@ The current contribution is partial real analysis and conditional covering-space
 of the Poincare conjecture. The stages below require further decomposition and
 an audit of reusable foundations in the pinned mathlib revision.
 
+This table describes the root project's locally implemented stages. A separate
+`full-proof/` candidate now imports a pinned external proof; it is undergoing its
+own source, target, and kernel checks. No external stage is counted as independently
+verified by the root project's earlier successful build.
+
 | Stage | Required objects and theorems | Dependencies | Status |
 | --- | --- | --- | --- |
 | Target statement | Compact, Hausdorff, simply connected topological three-manifolds without boundary are homeomorphic to the standard three-sphere | Manifolds and the fundamental groupoid | Definition only |

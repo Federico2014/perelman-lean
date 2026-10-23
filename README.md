@@ -7,7 +7,13 @@ This Lean 4 / mathlib project formalizes real-analysis ingredients of Perelman's
 finite-extinction argument and a conditional covering-space implication. Its area
 functions have not been identified with geometric invariants of an actual Ricci
 flow, and no spherical covering has been constructed for the target manifolds.
-`PoincareConjecture` defines the target proposition; there is no theorem proving it.
+`PoincareConjecture` defines the target proposition. The root project has not proved it.
+
+The `verify/upstream-complete` branch stages a separate [full-target integration](full-proof/README.md)
+of `frenzymath/PoincareConjecture` at an immutable commit. It remains verification
+pending. Its dedicated workflow checks the original source build, an independently
+stated target, axiom dependencies, kernel replay, and the integrated completeness gate.
+The root project's successful partial checks are not evidence that this candidate is complete.
 
 ## Formalized results
 

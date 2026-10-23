@@ -1,0 +1,19 @@
+name = "perelman_full"
+version = "0.1.0"
+defaultTargets = ["PerelmanFull", "FullAudit"]
+
+[[require]]
+name = "poincareConjecture"
+git = "https://github.com/frenzymath/PoincareConjecture.git"
+rev = "62db01af9388dc1d9b56b66d6674f4c09b2318a2"
+
+[[lean_lib]]
+name = "SharedSources"
+srcDir = ".."
+roots = ["Perelman.Statement", "CompletionPolicy"]
+
+[[lean_lib]]
+name = "PerelmanFull"
+
+[[lean_lib]]
+name = "FullAudit"
