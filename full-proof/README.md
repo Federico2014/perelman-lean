@@ -7,6 +7,8 @@ This separate Lean 4.33.1 project integrates the proof in
 The upstream geometric proof belongs to its original authors. This project shares
 `Perelman/Statement.lean` with the root project and supplies the second-countability
 bridge needed to apply the upstream theorem to that exact target.
+See the [pinned provenance and proof map](PROVENANCE.md) for the source route,
+attribution, and the required verification scope.
 
 This integration has not yet passed our complete independent verification.
 The verification branch must pass the original source build, target checks,
