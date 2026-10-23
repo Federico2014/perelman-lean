@@ -1,45 +1,70 @@
-# 完整形式化的依赖与验收条件
+# Dependencies and acceptance criteria for a complete formalization
 
-当前成果是局部实分析，不能作为完整庞加莱猜想证明提交。这里列出的工作尚未完成；
-各阶段可能需要进一步拆分，也应先审计固定 mathlib 版本中可复用的基础。
+The current contribution is partial real analysis and conditional covering-space topology. It is not a complete proof
+of the Poincare conjecture. The stages below require further decomposition and
+an audit of reusable foundations in the pinned mathlib revision.
 
-| 阶段 | 所需对象与定理 | 依赖 | 当前状态 |
+| Stage | Required objects and theorems | Dependencies | Status |
 | --- | --- | --- | --- |
-| 目标命题 | 紧致、Hausdorff、单连通、无边界三维拓扑流形同胚于标准三维球面 | mathlib 流形与基本群胚 | 仅定义命题 |
-| 几何起点 | 三维拓扑流形的光滑化、可定向性、黎曼度量存在；结论回到拓扑同胚 | 三维拓扑、微分几何 | 未实现 |
-| Ricci 流 | 时间依赖度量、Ricci 张量、流方程、短时存在与延拓 | 张量、联络、曲率、抛物型 PDE | 未实现 |
-| 标量曲率估计 | 演化方程、最大值原理、`R_min(t) ≥ -3/(2(t+C))` | Ricci 流 | 未实现 |
-| 奇点与手术 | 熵与约化体积、非塌缩、典范邻域、颈部和帽、手术流存在、时间控制 | Ricci 流与几何分析 | 未实现 |
-| 面积不变量 | 相对环路空间同伦类、非平凡类存在、极小圆盘面积的极小极大构造及正性 | 同伦论、极小曲面 | 未实现 |
-| 面积变化 | 圆盘面积变分、Gauss–Bonnet、曲线缩短流及正则化，得到前向上差商估计 | 面积不变量、Ricci 流 | 未实现 |
-| 手术控制 | 手术映射的距离/面积估计、拓扑类追踪；处理近似误差及手术时刻 | 手术、面积不变量 | 未实现 |
-| 实分析比较 | 归一化、对数比较、显式矛盾时间、有限次向下跳跃的拼接 | 给定的实函数假设 | 已证明 |
-| 几何消亡 | 将实际面积不变量接入上述比较，排除在时间界后仍有非空分量 | 前述几何与分析 | 未实现 |
-| 拓扑终点 | 手术拓扑反演、球面空间形式与连通和、单连通条件排除其余因子 | 三维拓扑、几何消亡 | 未实现 |
-| 顶层定理 | 无额外几何假设地证明 `Perelman.PoincareConjecture` | 全部阶段 | 未实现 |
+| Target statement | Compact, Hausdorff, simply connected topological three-manifolds without boundary are homeomorphic to the standard three-sphere | Manifolds and the fundamental groupoid | Definition only |
+| Geometric starting point | Smoothing, orientability, existence of a Riemannian metric, and passage back to a topological conclusion | Three-dimensional topology and differential geometry | Missing |
+| Ricci flow | Time-dependent metrics, Ricci tensor, flow equation, short-time existence, continuation | Tensors, connections, curvature, parabolic PDE | Missing |
+| Scalar curvature | Evolution equation, maximum principle, `R_min(t) >= -3/(2(t+C))` | Ricci flow | Missing |
+| Singularities and surgery | Entropy, reduced volume, noncollapsing, canonical neighborhoods, necks and caps, existence and time control of surgery flows | Ricci flow and geometric analysis | Missing |
+| Area invariant | Relative loop-space homotopy classes, existence of a nontrivial class, min-max disk area, positivity | Homotopy theory and minimal surfaces | Missing |
+| Geometric area evolution | Area variation, Gauss-Bonnet, curve shortening and regularization, forward upper slope estimates | Area invariant and Ricci flow | Missing |
+| Surgery estimates | Distance and area control, tracking homotopy classes, approximation errors and surgery times | Surgery and the area invariant | Missing |
+| Analytic normalization | Normalize a forward upper slope estimate without differentiability | Supplied scalar-curvature and area inequalities | Proved |
+| Analytic comparison | Logarithmic comparison and explicit obstruction time | Supplied continuous real-valued profiles | Proved |
+| Analytic jump errors | Finite-piece comparison with cumulative additive jump errors and an explicit lifespan bound | Supplied finite partition and error budget | Proved |
+| Geometric extinction | Apply analytic comparison to actual invariants to exclude surviving components | The preceding geometric and analytic stages | Missing |
+| Covering-space conclusion | A supplied connected covering of a simply connected space is a homeomorphism; specialize to a supplied spherical covering | Covering-space lifting theory | Proved |
+| Geometric/topological bridge | Reverse surgery topology and construct a spherical covering, or an equivalent classification adequate for the target manifolds | Three-dimensional topology and geometric extinction | Missing |
+| Main theorem | Prove `Perelman.PoincareConjecture` without extra geometric assumptions | All stages | Missing |
 
-## 当前定理的假设边界
+The opt-in `--require-complete` verification mode currently fails because this
+main theorem is absent. Its negative tests also reject a theorem that proves the
+target only by assuming that same target. This gate does not fill any mathematical
+gap or replace independent review of the statement.
 
-`area_rate_bound` 的输入是两个数值不等式。它不证明任何流满足这些不等式。
+## Boundaries of the current results
 
-`normalized_area_forwardSlopeBound` 的输入还包含面积函数在指定时间的右导数。
-真实极小极大面积一般不应被假定处处可微；最终几何接口需要前向差商版本。
+`area_rate_bound` takes two numerical inequalities as input. It does not prove
+that any geometric flow satisfies either inequality.
 
-`logarithmic_comparison_on` 处理连续函数的前向差商，因此可以复用于较弱正则性的几何论证。
-但实际不变量的连续性及该差商条件仍需证明。
+`normalized_area_forwardSlopeBound` uses a right derivative. Its extension
+`normalized_area_forwardSlopeBound_of_slope` uses only a forward upper slope
+estimate. Thus the new analytic normalization step does not require the geometric
+area invariant to be differentiable. Constructing that invariant and proving its
+upper slope estimate remain separate obligations.
 
-`logarithmic_comparison_with_jumps` 只处理有限分段与精确的不增加条件。
-近似 `(1+ξ)` 控制、消失分量和可能的手术时间累积都没有被这个定理自动解决。
+`logarithmic_comparison_on` assumes continuity. The geometric invariant's
+continuity on each smooth time interval has not been established here.
 
-`no_global_area_profile` 的结论是满足给定性质的全局函数不存在，不是某个流已经消亡。
-把两者连接起来，需要证明：若流在相关时间仍非空，就能构造具有相应性质的面积不变量。
+`logarithmic_comparison_with_jump_errors` allows finite pieces and a supplied
+additive error for each jump. `piecewise_lifespan_lt_obstructionTime` bounds the
+terminal time when the terminal value is nonnegative and the cumulative error
+has a supplied budget. Neither theorem constructs a finite partition of surgery
+times or converts approximate Lipschitz control into a bounded total additive error.
+Disappearing components and possible accumulation of surgery times require
+additional geometric arguments.
 
-## 完整交付的必要条件
+`no_global_area_profile` and `no_global_area_profile_of_slope` exclude global
+functions satisfying their hypotheses. They do not prove that a particular flow
+becomes extinct. This requires showing that a surviving geometric flow would
+produce profiles with all the listed properties.
 
-1. 保留当前准确的拓扑命题，不把“单连通三维流形”重新定义成球面。
-2. 顶层定理直接证明目标命题，不能把猜想或全部困难定理放入未经实例化的假设结构中。
-3. 每个几何阶段给出 Lean 证明及原始文献的准确对应，明确适用的维数、正则性和边界条件。
-4. 全新环境按固定工具链与依赖构建成功，检查所有公开结论的传递公理依赖。
-5. 接受独立的命题覆盖范围审查与数学审查；通过 Lean 内核并不能替代“命题确实是原题”的核对。
+## Acceptance criteria for a complete proof
 
-在这些条件满足前，仓库持续标为局部形式化。
+1. Preserve the genuine topological statement. Do not redefine a simply connected
+   three-manifold to mean a sphere.
+2. Provide a main theorem proving the target itself. Do not assume the conjecture
+   or package all difficult claims into an uninstantiated hypothesis structure.
+3. Prove the geometric stages in Lean and map them to precise references, with
+   explicit dimensions, regularity, and boundary conditions.
+4. Build in a fresh environment with pinned dependencies, and inspect transitive
+   axiom dependencies of the public conclusions.
+5. Obtain an independent statement-coverage review and mathematical review. Kernel
+   acceptance alone cannot establish that an encoded statement matches the original problem.
+
+Until these criteria are met, this repository remains a partial formalization.

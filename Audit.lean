@@ -14,6 +14,13 @@ import Lean.Util.CollectAxioms
 #print axioms Perelman.forwardSlopeBound_of_hasDerivWithinAt
 #print axioms Perelman.normalized_area_forwardSlopeBound
 #print axioms Perelman.no_global_area_profile
+#print axioms Perelman.forwardSlopeBound_div_time_shift
+#print axioms Perelman.normalized_area_forwardSlopeBound_of_slope
+#print axioms Perelman.no_global_area_profile_of_slope
+#print axioms Perelman.logarithmic_comparison_with_jump_errors
+#print axioms Perelman.piecewise_lifespan_lt_obstructionTime
+#print axioms Perelman.coveringHomeomorphOfSimplyConnected
+#print axioms Perelman.nonempty_homeomorph_threeSphere_of_covering
 
 open Lean Elab Command in
 elab "#audit_perelman" : command => do

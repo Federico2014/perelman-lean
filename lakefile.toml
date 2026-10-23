@@ -1,6 +1,6 @@
 name = "perelman_foundations"
 version = "0.1.0"
-defaultTargets = ["Perelman", "Audit"]
+defaultTargets = ["Perelman", "Audit", "Completion"]
 
 [[require]]
 name = "mathlib"
@@ -12,3 +12,6 @@ name = "Perelman"
 
 [[lean_lib]]
 name = "Audit"
+
+[[lean_lib]]
+name = "Completion"

@@ -1,117 +1,167 @@
 # Perelman Lean Foundations
 
-**局部形式化进行中。这个仓库没有完成佩雷尔曼对庞加莱猜想的证明，也没有证明庞加莱猜想本身。**
+**Partial formalization in progress. This repository does not prove the Poincare
+conjecture or formally verify Perelman's complete proof.**
 
-本项目使用 Lean 4 / mathlib，形式化佩雷尔曼有限消亡论证中的一部分实分析。
-现有定理处理实值函数的衰减、对数比较和有限次向下跳跃；尚未把这些函数与真实的
-Ricci 流、极小圆盘面积或手术过程连接起来。`PoincareConjecture` 仅定义目标命题。
+This Lean 4 / mathlib project formalizes real-analysis ingredients of Perelman's
+finite-extinction argument and a conditional covering-space implication. Its area
+functions have not been identified with geometric invariants of an actual Ricci
+flow, and no spherical covering has been constructed for the target manifolds.
+`PoincareConjecture` defines the target proposition; there is no theorem proving it.
 
-## 已完成的形式化
+## Formalized results
 
-| 文件 | 内容 | 状态 |
+| File | Content | Status |
 | --- | --- | --- |
-| [Perelman/Statement.lean](Perelman/Statement.lean) | 紧致、Hausdorff、单连通、无边界三维拓扑流形与标准三维球面同胚的命题 | 定义，未证明 |
-| [Perelman/Extinction.lean](Perelman/Extinction.lean) | 前向差商上界推出对数比较估计 | 已证明 |
-| 同上 | 对数比较估计在有限次向下跳跃下的拼接 | 已证明，跳跃不等式是显式假设 |
-| 同上 | 非负函数不能在显式时间区间上持续满足指定衰减估计 | 已证明 |
-| 同上 | 从给定的面积演化和标量曲率不等式导出归一化面积衰减 | 已证明，几何不等式是显式假设 |
-| 同上 | 满足这些估计的全局非负连续面积函数不存在 | 已证明的实分析命题 |
-| [Audit.lean](Audit.lean) | 检查 `Perelman` 命名空间的声明及传递公理依赖 | 拒绝新增公理和 `sorryAx` |
+| [Statement.lean](Perelman/Statement.lean) | A compact, Hausdorff, simply connected topological three-manifold without boundary is homeomorphic to the standard three-sphere | Target definition only |
+| [Extinction.lean](Perelman/Extinction.lean) | Logarithmic comparison, an explicit obstruction time, finite downward jumps, and normalization of right-derivative estimates | Proved analytic statements |
+| [UpperSlope.lean](Perelman/UpperSlope.lean) | Normalization of forward upper slope estimates, without differentiability assumptions on the area function | Proved analytic statements |
+| [Piecewise.lean](Perelman/Piecewise.lean) | Comparison with cumulative jump errors and an explicit lifespan bound | Proved for a supplied finite partition and jump estimates |
+| [Covering.lean](Perelman/Covering.lean) | Construct a homeomorphism from a connected covering of a simply connected space; specialize to a supplied three-sphere covering | Proved conditional topology; the covering itself is not constructed |
+| [Audit.lean](Audit.lean) | Transitive axiom audit of declarations in namespace `Perelman` | Rejects local axioms and `sorryAx` |
+| [Completion.lean](Completion.lean) | Opt-in gate requiring a theorem of the full target type, with no extra hypotheses | Currently rejects a claim of completeness |
 
-## 数学内容与适用边界
+## Mathematics and scope
 
-对应[佩雷尔曼第三篇论文 §1.3](https://arxiv.org/html/math/0307245v1)。
-设 `C > 0`，并**假设**一个非负面积函数满足
+The analytic argument follows [Perelman's third paper, Section 1.3](https://arxiv.org/html/math/0307245v1).
+Suppose `C > 0` and a nonnegative function satisfies the **assumed** estimates
 
 \[
 A'(t)\le -2\pi-\tfrac12 R(t)A(t),\qquad
 R(t)\ge -\frac{3}{2(t+C)}.
 \]
 
-代码证明
+The code proves the resulting inequalities
 
 \[
 A'(t)\le -2\pi+\frac{3A(t)}{4(t+C)},\qquad
 \left(\frac{A(t)}{t+C}\right)'\le -\frac{2\pi}{t+C}.
 \]
 
-一般地，若连续函数 `f` 的前向差商具有上界 `-k/(t+C)`，则
+`UpperSlope.lean` also establishes this normalization directly for forward
+upper difference-quotient bounds. It does not assume that `A` has a derivative.
+The quotient normalization lemma itself does not require continuity; the subsequent
+comparison theorem lists continuity separately.
+
+For a continuous function `f` with forward upper slope bounded by `-k/(t+C)`,
 
 \[
 f(T)\le f(0)-k\bigl(\log(T+C)-\log C\bigr).
 \]
 
-当 `k > 0`、`f(0) ≥ 0` 时，取
+If `k > 0` and `f(0) >= 0`, the right side is negative at
 
 \[
-T=C\left(\exp\left(\frac{f(0)}k+1\right)-1\right)>0,
+T=C\left(\exp\left(\frac{f(0)}k+1\right)-1\right)>0.
 \]
 
-右端等于 `-k < 0`，与 `f(T) ≥ 0` 矛盾。
-`ForwardSlopeBound` 直接使用“对所有严格较大的上界，充分靠近的前向差商均小于该上界”
-表述，不要求 `f` 可微。连续性单独列为假设。右导数版本通过证明连接到这个条件。
+This excludes a nonnegative terminal value at that time. `ForwardSlopeBound`
+expresses an upper bound using eventually bounded forward difference quotients,
+without postulating a derivative or an attained extremum.
 
-`logarithmic_comparison_with_jumps` 允许有限多个连续片段，并假设每次连接时函数值不增加。
-它不证明几何手术满足这个假设，也不证明手术时刻在紧时间区间内只有有限多个。
-`no_global_area_profile` 使用连续函数和右导数，因此不能直接应用于一般带手术的 Ricci 流。
+For finitely many continuous pieces `f_i` with jump errors `e_i`, the code proves
 
-## 复现
+\[
+f_n(t_n)\le f_0(t_0)+\sum_{i<n}e_i
+-k\bigl(\log(t_n+C)-\log(t_0+C)\bigr).
+\]
 
-固定环境：
+If `t_0 = 0`, `C > 0`, `k > 0`, the terminal value is nonnegative, the total error
+is at most `E`, and `f_0(0)+E >= 0`, then
 
-- Lean：`leanprover/lean4:v4.32.0`
-- mathlib：`81a5d257c8e410db227a6665ed08f64fea08e997`
-- 全部传递依赖：[lake-manifest.json](lake-manifest.json)
+\[
+t_n<C\left(\exp\left(\frac{f_0(0)+E}{k}+1\right)-1\right).
+\]
 
-安装 [elan](https://github.com/leanprover/elan) 后，在仓库根目录执行：
+This allows a supplied additive error budget. It does not derive additive errors
+from a geometric `(1+xi)` Lipschitz estimate, prove local finiteness of surgeries,
+or establish any geometric surgery inequality. A supplied finite partition is
+an explicit hypothesis.
+
+`Covering.lean` lifts the identity through a supplied covering map. Uniqueness of
+lifts proves that the lift is a two-sided inverse, yielding an actual homeomorphism.
+For a simply connected, locally path connected space `M`, a supplied covering map
+`ThreeSphere -> M` therefore gives `M ≃ₜ ThreeSphere`. The difficult claim that every
+target manifold admits such a covering has not been proved or added as an axiom.
+
+## Reproduce
+
+Pinned environment:
+
+- Lean: `leanprover/lean4:v4.32.0`
+- mathlib: `81a5d257c8e410db227a6665ed08f64fea08e997`
+- Transitive dependencies: [lake-manifest.json](lake-manifest.json)
+
+Install [elan](https://github.com/leanprover/elan), then run:
 
 ```sh
 lake exe cache get
 python3 verify.py --self-test
 ```
 
-`lake exe cache get` 会按提交的 manifest 获取依赖并下载预编译缓存，需要网络和足够磁盘空间。
-如尚未生成依赖目录，也可先执行 `lake update`；随后必须检查 manifest 没有漂移。
+Fetching dependencies and their precompiled cache requires network access and disk
+space. If necessary, run `lake update` first and check that the manifest has not
+drifted. The verification script checks dependency revisions, re-elaborates all
+local modules with warnings treated as errors, and runs the axiom audit.
 
-验证脚本逐一重新编译本仓库源码，将警告视为错误，检查依赖提交，并运行公理审计。
-`--self-test` 额外临时注入一个自定义公理、一个未完成定理和一个未完成定义，确认审计均拒绝它们。
-这些临时文件放在忽略的 `.lake/` 中，测试结束即删除。
+`--self-test` additionally checks that the audit rejects a custom axiom, an unfinished
+theorem, and an unfinished definition. The temporary probe files live under the
+ignored `.lake/` directory and are deleted afterwards.
 
-源码提交 `846526f0798e0dcb36d9225bf3066e88ad5d9c7c` 的首次本地检查输出见
-[verification.log](verification.log)：源码检查、公理审计和三项拒绝测试均通过。
-其中审计的 31 个定理声明包括 Lean 生成的辅助声明；手写的主要定理有 10 个。
+The self-tests also confirm that the completeness gate rejects a missing main
+theorem and a conditional wrapper that merely assumes the target. To require a
+complete proof explicitly, use:
 
-也可以使用标准 Lake 构建：
+```sh
+python3 verify.py --require-complete
+```
+
+**This command currently exits with failure because the full theorem is missing.**
+It expects a universe-polymorphic theorem named `Perelman.poincareConjecture` whose
+type is exactly `Perelman.PoincareConjecture`, allowing only the three foundation
+axioms listed below. A successful partial build is not a successful completeness
+check. The gate checks the encoded target, so independent review of the target's
+mathematical meaning is still required.
+
+Standard Lake builds are also supported:
 
 ```sh
 lake build
 ```
 
-通过构建与审计，只说明这里列出的局部声明通过检查，不代表目标猜想已被证明。
-审计仅允许 Lean/mathlib 常用的 `propext`、`Classical.choice` 和 `Quot.sound`，
-不要求排除经典选择，也不把经典基础公理算作缺失几何定理的替代。
+The initial ten-theorem baseline at commit
+`846526f0798e0dcb36d9225bf3066e88ad5d9c7c` has its historical local transcript in
+[verification.log](verification.log). Its 31 audited theorem declarations include
+Lean-generated auxiliaries. Further modules extend that baseline; the historical
+transcript is not evidence for subsequently added results.
 
-## 完整证明仍缺少什么
+Passing these checks verifies the local declarations, not the Poincare conjecture.
+The only permitted transitive axioms are `propext`, `Classical.choice`, and
+`Quot.sound`. Classical foundations do not substitute for missing geometric theorems.
 
-详细依赖与交付条件见 [ROADMAP.md](ROADMAP.md)。核心缺口包括：
+## Remaining work for a complete proof
 
-1. 从目标拓扑流形构造适用的光滑、可定向黎曼几何结构，并连接两种命题表述。
-2. Ricci 流的定义、短时存在、标量曲率演化及最大值原理。
-3. 佩雷尔曼的非塌缩、典范邻域、奇点控制和带手术 Ricci 流存在理论。
-4. 环路空间中的拓扑类、极小圆盘面积不变量及其正性、正则化和前向差商估计。
-5. 手术时刻的面积控制、拓扑追踪，以及将实分析矛盾转化为几何有限消亡。
-6. 有限消亡后的三维拓扑分类，并最终构造 `M ≃ₜ ThreeSphere`。
+[ROADMAP.md](ROADMAP.md) records the dependency boundaries and acceptance criteria.
+The missing work includes smooth structures and metrics on the target manifolds;
+Ricci flow existence and curvature estimates; noncollapsing and canonical
+neighborhoods; surgery construction; loop-space and minimal-disk area invariants;
+their geometric evolution and surgery estimates; geometric finite extinction;
+and the topological construction of `M ≃ₜ ThreeSphere`.
 
-上述缺口没有以公理、`sorry` 或一个包含完整结论的假设包填入。项目也没有声称完整形式化在其他地方不存在；
-这里核查的是所固定的 mathlib 版本，它仍将该猜想标为 `proof_wanted`。
+These gaps are not filled by axioms, unfinished terms, or an uninstantiated structure
+that assumes the difficult conclusions. At the pinned mathlib revision, the
+corresponding conjecture is still marked `proof_wanted`. No claim is made about
+the absence of formalizations elsewhere.
 
-## 参考与归属
+## References and attribution
 
 - Grisha Perelman, [The entropy formula for the Ricci flow and its geometric applications](https://arxiv.org/abs/math/0211159).
 - Grisha Perelman, [Ricci flow with surgery on three-manifolds](https://arxiv.org/abs/math/0303109).
-- Grisha Perelman, [Finite extinction time for the solutions to the Ricci flow on certain three-manifolds](https://arxiv.org/abs/math/0307245), §1.2–1.4.
-- John Morgan and Gang Tian, [Ricci Flow and the Poincare Conjecture](https://arxiv.org/abs/math/0607607)，详细数学论述，不是本项目的机器证明。
-- [mathlib 的目标命题](https://github.com/leanprover-community/mathlib4/blob/81a5d257c8e410db227a6665ed08f64fea08e997/Mathlib/Geometry/Manifold/PoincareConjecture.lean)，Junyan Xu；本项目采用相同的三维拓扑命题假设。
+- Grisha Perelman, [Finite extinction time for the solutions to the Ricci flow on certain three-manifolds](https://arxiv.org/abs/math/0307245), Sections 1.2-1.4.
+- John Morgan and Gang Tian, [Ricci Flow and the Poincare Conjecture](https://arxiv.org/abs/math/0607607), a mathematical exposition, not this project's machine proof.
+- Junyan Xu, [mathlib's target statements](https://github.com/leanprover-community/mathlib4/blob/81a5d257c8e410db227a6665ed08f64fea08e997/Mathlib/Geometry/Manifold/PoincareConjecture.lean). This project uses the same hypotheses for the topological three-dimensional statement.
 
-本仓库中的初始代码由 Codex 辅助编写并经 Lean 检查。数学证明归属于原作者；没有完成独立的完整证明贡献。
-代码采用 [Apache-2.0](LICENSE) 许可证；依赖保留各自许可和作者归属。
+The initial code was written with Codex assistance. Mathematical results retain
+their original attribution. This repository does not claim a complete formalization.
+Code is licensed under [Apache-2.0](LICENSE); dependencies retain their own licenses
+and author attributions.

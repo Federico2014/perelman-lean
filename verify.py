@@ -14,7 +14,10 @@ import tempfile
 
 
 ROOT = Path(__file__).resolve().parent
-MODULES = ["Perelman.Statement", "Perelman.Extinction", "Perelman", "Audit"]
+MODULES = [
+    "Perelman.Statement", "Perelman.Extinction", "Perelman.UpperSlope",
+    "Perelman.Piecewise", "Perelman.Covering", "Perelman", "Audit", "Completion",
+]
 
 
 def run(args: list[str], *, expect_success: bool = True) -> subprocess.CompletedProcess:
@@ -71,15 +74,42 @@ def self_test_audit() -> None:
                 raise RuntimeError(f"Audit failed to reject probe {i}:\n{result.stdout}")
             print(f"Audit rejection probe {i + 1}/{len(probes)} passed", flush=True)
 
+    completion_probes = [
+        ("", "full Poincare theorem is missing"),
+        (
+            "universe u\ntheorem Perelman.poincareConjecture "
+            "(h : Perelman.PoincareConjecture.{u}) : Perelman.PoincareConjecture.{u} := h",
+            "theorem type does not match the full target",
+        ),
+    ]
+    for i, (declaration, expected) in enumerate(completion_probes):
+        result = completion_check(declaration)
+        if not result.returncode or expected not in result.stdout:
+            raise RuntimeError(f"Completeness gate failed to reject probe {i}:\n{result.stdout}")
+        print(f"Completeness rejection probe {i + 1}/{len(completion_probes)} passed", flush=True)
+
+
+def completion_check(declaration: str = "") -> subprocess.CompletedProcess:
+    with tempfile.TemporaryDirectory(prefix="completion-", dir=ROOT / ".lake") as tmp:
+        source = Path(tmp) / "Check.lean"
+        source.write_text(f"import Completion\n\n{declaration}\n\n#require_complete_poincare\n")
+        return run(["lake", "env", "lean", str(source)], expect_success=False)
+
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--self-test", action="store_true", help="also test rejection of axioms and incomplete proofs")
+    parser.add_argument("--require-complete", action="store_true", help="require a theorem proving the full Poincare target")
     args = parser.parse_args()
     try:
         verify()
         if args.self_test:
             self_test_audit()
+        if args.require_complete:
+            result = completion_check()
+            print(result.stdout, end="", flush=True)
+            if result.returncode:
+                raise RuntimeError("The full Poincare proof is not complete")
     except (OSError, RuntimeError, ValueError) as exc:
         print(f"Verification failed: {exc}", file=sys.stderr)
         return 1
