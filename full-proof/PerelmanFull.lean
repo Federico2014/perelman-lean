@@ -12,7 +12,7 @@ universe u
 
 theorem poincareConjecture : PoincareConjecture.{u} := by
   intro M _ _ _ _ _
-  letI : SecondCountableTopology M :=
+  let : SecondCountableTopology M :=
     ChartedSpace.secondCountable_of_sigmaCompact (EuclideanSpace ℝ (Fin 3)) M
   exact _root_.PoincareConjecture.topologicalPoincareSkeleton M
 
