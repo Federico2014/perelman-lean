@@ -1,0 +1,22 @@
+Dependency revisions match lake-manifest.json
+Lean (version 4.32.0, x86_64-apple-darwin24.6.0, commit 8c9756b28d64dab099da31a4c09229a9e6a2ef35, Release)
+Checking Perelman.Statement
+Checking Perelman.Extinction
+Checking Perelman
+Checking Audit
+Perelman.PoincareConjecture.{u} : Prop
+'Perelman.obstructionTime_pos' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Perelman.logarithmic_comparison_on' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Perelman.logarithmic_comparison' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Perelman.logarithmic_comparison_with_jumps' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Perelman.no_nonnegative_on_obstruction_interval' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Perelman.area_rate_bound' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Perelman.rescaled_rate_bound' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Perelman.forwardSlopeBound_of_hasDerivWithinAt' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Perelman.normalized_area_forwardSlopeBound' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Perelman.no_global_area_profile' depends on axioms: [propext, Classical.choice, Quot.sound]
+Axiom audit passed for 31 theorem declarations in namespace Perelman.
+Local source checks and axiom audit passed. The full Poincare conjecture remains unproved.
+Audit rejection probe 1/3 passed
+Audit rejection probe 2/3 passed
+Audit rejection probe 3/3 passed
