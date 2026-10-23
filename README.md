@@ -135,6 +135,13 @@ The initial ten-theorem baseline at commit
 Lean-generated auxiliaries. Further modules extend that baseline; the historical
 transcript is not evidence for subsequently added results.
 
+The extension at commit `6521c81a286d1709a09e7267b378b618c8e88927` adds seven
+mathematical theorems and a covering-homeomorphism construction. Its complete
+local transcript is [verification-extension.log](verification-extension.log),
+including all three axiom-audit rejection tests and both completeness-gate
+rejection tests. Its [Linux CI run](https://github.com/Federico2014/perelman-lean/actions/runs/39899089964)
+also passed. These are verification results for the partial project.
+
 Passing these checks verifies the local declarations, not the Poincare conjecture.
 The only permitted transitive axioms are `propext`, `Classical.choice`, and
 `Quot.sound`. Classical foundations do not substitute for missing geometric theorems.
