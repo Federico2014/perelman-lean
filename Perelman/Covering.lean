@@ -45,7 +45,7 @@ theorem nonempty_homeomorph_threeSphere_of_covering
   have hdim : (1 : Cardinal) < Module.rank ℝ (EuclideanSpace ℝ (Fin 4)) := by
     rw [← Module.finrank_eq_rank]
     simp
-  letI : PathConnectedSpace ThreeSphere :=
+  let : PathConnectedSpace ThreeSphere :=
     isPathConnected_iff_pathConnectedSpace.mp
       (isPathConnected_sphere hdim (0 : EuclideanSpace ℝ (Fin 4)) (by norm_num : (0 : ℝ) ≤ 1))
   exact ⟨(coveringHomeomorphOfSimplyConnected hp).symm⟩

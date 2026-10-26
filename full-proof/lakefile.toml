@@ -10,7 +10,7 @@ rev = "62db01af9388dc1d9b56b66d6674f4c09b2318a2"
 [[lean_lib]]
 name = "SharedSources"
 srcDir = ".."
-roots = ["Perelman.Statement", "CompletionPolicy"]
+roots = ["Perelman.Statement", "Perelman.Poincare", "CompletionPolicy"]
 
 [[lean_lib]]
 name = "PerelmanFull"

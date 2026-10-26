@@ -9,6 +9,7 @@ on:
       - "full-proof/lakefile.toml"
       - "full-proof/lake-manifest.json"
       - "Perelman/Statement.lean"
+      - "Perelman/Poincare.lean"
       - "CompletionPolicy.lean"
       - "scripts/upstream_audit/**"
       - "scripts/verify_upstream.py"

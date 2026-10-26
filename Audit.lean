@@ -1,9 +1,12 @@
 import Perelman
 import Lean.Util.CollectAxioms
 
-/-! Kernel dependency audit. No theorem asserting `PoincareConjecture` exists here. -/
+/-! Transitive axiom audit of the full target and the local analytic results. -/
 
 #check Perelman.PoincareConjecture
+#check @Perelman.poincareConjecture
+#print axioms Perelman.nonempty_homeomorph_three_sphere
+#print axioms Perelman.poincareConjecture
 #print axioms Perelman.obstructionTime_pos
 #print axioms Perelman.logarithmic_comparison_on
 #print axioms Perelman.logarithmic_comparison

@@ -153,6 +153,7 @@ def integration(image, logs):
     extra = bind(REPO / "full-proof", "/integration/full-proof")
     extra += volume("full", "/integration/full-proof/.lake")
     extra += bind(REPO / "Perelman/Statement.lean", "/integration/Perelman/Statement.lean")
+    extra += bind(REPO / "Perelman/Poincare.lean", "/integration/Perelman/Poincare.lean")
     extra += bind(REPO / "CompletionPolicy.lean", "/integration/CompletionPolicy.lean")
     container(image, "integration", "/audit/integration.sh", logs / "integration.log",
               extra=extra, cwd="/integration/full-proof", timeout=1800)

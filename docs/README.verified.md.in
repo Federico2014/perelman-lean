@@ -20,25 +20,24 @@ Perelman.poincareConjecture : Perelman.PoincareConjecture
 ```
 
 The [target definition](Perelman/Statement.lean) uses standard mathlib types.
-The [adapter](full-proof/PerelmanFull.lean) derives the upstream theorem's
+The [adapter](Perelman/Poincare.lean) derives the upstream theorem's
 second-countability hypothesis from compactness. It adds no smoothness, curvature,
 surgery-flow, or conjecture hypothesis to the topological conclusion.
 
-## Reproduce the complete proof check
+## Reproduce the local target and adapter check
 
-Install elan, then use the separate project's pinned Lean 4.33.1 toolchain:
+Install elan, then use the root project's pinned Lean 4.33.1 toolchain:
 
 ```sh
-cd full-proof
 lake exe cache get
 lake build
-lake env lean -DwarningAsError=true FullAudit.lean
+python3 verify.py --self-test --require-complete
 ```
 
 The geometric proof is large; its first source build can take many hours.
-All dependency revisions are locked in [the manifest](full-proof/lake-manifest.json).
-After preparing both projects, `python3 verify.py --self-test --require-complete`
-also checks the root foundations and the complete-target gate.
+All dependency revisions are locked in [the manifest](lake-manifest.json).
+The dedicated source-verification workflow additionally checks every original
+source and the independently stated endpoint bridge described below.
 
 ## Verification scope
 
@@ -57,7 +56,7 @@ the meaning of natural-language mathematics.
 
 ## Separate analytic foundations
 
-The root Lean 4.32.0 project retains independently proved analytic lemmas on
+The local analytic modules retain independently proved lemmas on
 normalization, logarithmic comparison, finite jump errors, and conditional
 covering-space homeomorphisms. Its checks and historical logs concern those
 partial ingredients. They are not dependencies of the imported geometric proof.

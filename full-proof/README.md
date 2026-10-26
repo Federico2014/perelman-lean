@@ -1,12 +1,12 @@
 # Full-target integration (verification pending)
 
-This separate Lean 4.33.1 project integrates the proof in
+This Lean 4.33.1 compatibility project imports the root implementation using the proof in
 `frenzymath/PoincareConjecture` at commit
 `62db01af9388dc1d9b56b66d6674f4c09b2318a2`.
 
 The upstream geometric proof belongs to its original authors. This project shares
-`Perelman/Statement.lean` with the root project and supplies the second-countability
-bridge needed to apply the upstream theorem to that exact target.
+`Perelman/Statement.lean` and `Perelman/Poincare.lean` with the root project.
+The second-countability bridge and final theorem live in that shared module.
 See the [pinned provenance and proof map](PROVENANCE.md) for the source route,
 attribution, and the required verification scope.
 

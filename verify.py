@@ -14,10 +14,10 @@ import tempfile
 
 
 ROOT = Path(__file__).resolve().parent
-FULL_ROOT = ROOT / "full-proof"
 MODULES = [
     "Perelman.Statement", "Perelman.Extinction", "Perelman.UpperSlope",
-    "Perelman.Piecewise", "Perelman.Covering", "Perelman", "Audit", "Completion",
+    "Perelman.Piecewise", "Perelman.Covering", "Perelman.Poincare",
+    "Perelman", "Audit", "CompletionPolicy", "Completion",
 ]
 
 
@@ -47,6 +47,9 @@ def verify_revisions(project: Path = ROOT) -> None:
 def verify() -> None:
     verify_revisions()
     print(run(["lake", "env", "lean", "--version"]).stdout, end="", flush=True)
+    # Build the pinned geometric dependency before explicitly rechecking local
+    # sources. The full theorem is part of the root library, not an optional project.
+    print(run(["lake", "--no-cache", "build", "+Perelman.Poincare"]).stdout, end="", flush=True)
     for module in MODULES:
         relative = Path(*module.split("."))
         output = ROOT / ".lake" / "build" / "lib" / "lean" / relative.with_suffix(".olean")
@@ -57,18 +60,14 @@ def verify() -> None:
             str(relative.with_suffix(".lean")),
         ])
         print(result.stdout, end="", flush=True)
-    print("Root-project source checks and axiom audit passed. The full geometric proof has not been checked by this step.", flush=True)
+    print("Root sources, full-target completeness gate, and axiom audit passed.", flush=True)
 
 
 def verify_complete() -> None:
-    """Select the full project's own toolchain, build sources, and check its gate."""
-    verify_revisions(FULL_ROOT)
-    print(run(["lake", "env", "lean", "--version"], cwd=FULL_ROOT).stdout, end="", flush=True)
-    # Running in this directory lets elan select Lean 4.33.1. Using `lake -d`
-    # from the root directory would instead select the root's Lean 4.32.0.
-    print(run(["lake", "--no-cache", "build"], cwd=FULL_ROOT).stdout, end="", flush=True)
-    result = run(["lake", "env", "lean", "-DwarningAsError=true", "FullAudit.lean"], cwd=FULL_ROOT)
+    """Recheck the full root target, then replay its adapter module."""
+    result = run(["lake", "env", "lean", "-DwarningAsError=true", "Completion.lean"])
     print(result.stdout, end="", flush=True)
+    print(run(["lake", "env", "leanchecker", "-v", "Perelman.Poincare"]).stdout, end="", flush=True)
 
 
 def self_test_audit() -> None:
@@ -104,7 +103,9 @@ def self_test_audit() -> None:
 def completion_check(declaration: str = "") -> subprocess.CompletedProcess:
     with tempfile.TemporaryDirectory(prefix="completion-", dir=ROOT / ".lake") as tmp:
         source = Path(tmp) / "Check.lean"
-        source.write_text(f"import Completion\n\n{declaration}\n\n#require_complete_poincare\n")
+        # Keep the negative probes in an environment without the real theorem,
+        # so they still test missing and circular proofs after root integration.
+        source.write_text(f"import CompletionPolicy\n\n{declaration}\n\n#require_complete_poincare\n")
         return run(["lake", "env", "lean", str(source)], expect_success=False)
 
 

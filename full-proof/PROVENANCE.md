@@ -52,8 +52,9 @@ and audits its transitive axiom dependencies.
 
 ## Adapter in this repository
 
-[PerelmanFull.lean](PerelmanFull.lean) imports the upstream topological endpoint
-and proves the shared `Perelman.PoincareConjecture` proposition. Its target uses
+[Perelman/Poincare.lean](../Perelman/Poincare.lean) imports the upstream topological
+endpoint and proves the shared target. [PerelmanFull.lean](PerelmanFull.lean) is
+a compatibility import of that same module. Its target uses
 the standard mathlib manifold, simple-connectivity, compactness and homeomorphism
 types. The upstream endpoint lists second countability; the adapter derives it
 from compactness with `ChartedSpace.secondCountable_of_sigmaCompact`.
